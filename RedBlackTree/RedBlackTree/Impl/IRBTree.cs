@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace RedBlackTree
+namespace RedBlackTree.Impl
 {
     public interface INode<TData> where TData : IComparable<TData>
     {

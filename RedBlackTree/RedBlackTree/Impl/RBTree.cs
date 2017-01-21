@@ -1,15 +1,25 @@
-﻿using System;
+﻿using RedBlackTree.Utils;
+using System;
 
-namespace RedBlackTree
+namespace RedBlackTree.Impl
 {
     public class RBTree<TData> : IRBTree<TData> where TData : IComparable<TData>
     {
         private TreeNode _root;
         public INode<TData> Root { get { return _root; } }
 
+        private readonly ILogger _logger;
+
         public RBTree(TData rootValue)
         {
             this.AddNode(rootValue);
+            _logger = new ConsoleLogger();
+        }
+
+        public RBTree(TData rootValue, ILogger logger)
+        {
+            this.AddNode(rootValue);
+            _logger = logger;
         }
 
         public INode<TData> AddNode(TData value)
@@ -25,9 +35,8 @@ namespace RedBlackTree
 
         private TreeNode AddNodeInternal(TreeNode newNode)
         {
-            // find a place for the node
             var isLeftNode = false;
-            var parent = FindParent(newNode.Value, out isLeftNode);
+            var parent = FindParentForValue(newNode.Value, out isLeftNode);
             if (isLeftNode)
             {
                 parent.Left = newNode;
@@ -38,20 +47,97 @@ namespace RedBlackTree
             }
             newNode.Parent = parent;
 
-            Rebalance(newNode);
+            RebalanceInsert(newNode);
+
+            throw new NotImplementedException();
         }
 
-        private void Rebalance(TreeNode newNode)
+        #region insert
+        private void Insert1(TreeNode node)
+        {
+            if (node.Parent == null)
+            {
+                node.NodeType = NodeType.Black;
+            }
+            else
+            {
+                Insert2(node);
+            }
+        }
+
+        private void Insert2(TreeNode node)
+        {
+            if (node.Parent.NodeType == NodeType.Black)
+            {
+                return;
+            }
+            Insert3(node);
+        }
+
+        private void Insert3(TreeNode node)
+        {
+            if (node.Uncle != null &&
+                node.Uncle.NodeType == NodeType.Red &&
+                node.Parent.NodeType == NodeType.Red)
+            {
+                node.Parent.NodeType = NodeType.Black;
+                node.Uncle.NodeType = NodeType.Black;
+                node.GrandParent.NodeType = NodeType.Red;
+
+                Insert1(node.GrandParent);
+            }
+            else
+            {
+                Insert4(node);
+            }
+        }
+
+        private void Insert4(TreeNode node)
+        {
+            if (node.IsRight && node.Parent.IsLeft)
+            {
+                RotateLeft(node.Parent);
+                node = node.Left;
+            }
+            else if (node.IsLeft && node.Parent.IsRight)
+            {
+                RotateRight(node.Parent);
+                node = node.Right;
+            }
+            Insert5(node);
+        }
+
+        private void Insert5(TreeNode node)
+        {
+            node.Parent.NodeType = NodeType.Black;
+            node.GrandParent.NodeType = NodeType.Red;
+
+            if (node.IsLeft && node.Parent.IsLeft)
+            {
+                RotateRight(node.GrandParent);
+            }
+            else
+            {
+                RotateLeft(node.GrandParent);
+            }
+        }
+        #endregion
+
+        private void RebalanceInsert(TreeNode newNode)
         {
             if (newNode.Parent == null)
             {
                 newNode.NodeType = NodeType.Black;
             }
-
-
+            throw new NotImplementedException();
         }
 
-        private TreeNode FindParent(TData nodeValue, out bool isLeftNode)
+        private void RebalanceDelete(TreeNode node)
+        {
+            throw new NotImplementedException();
+        }
+
+        private TreeNode FindParentForValue(TData nodeValue, out bool isLeftNode)
         {
             TreeNode parent = null;
             isLeftNode = false;
@@ -86,20 +172,238 @@ namespace RedBlackTree
             return parent;
         }
 
+        private void RotateLeft(TreeNode node)
+        {
+            var pivot = node.Right;
+            pivot.Parent = node.Parent;
+            if (node.Parent != null)
+            {
+                if (node.IsLeft)
+                {
+                    node.Parent.Left = pivot;
+                }
+                else
+                {
+                    node.Parent.Right = pivot;
+                }
+            }
+
+            node.Right = pivot.Left;
+            if (pivot.Left != null)
+            {
+                pivot.Left.Parent = node;
+            }
+
+            node.Parent = pivot;
+            pivot.Left = node;
+        }
+
+        private void RotateRight(TreeNode node)
+        {
+            var pivot = node.Left;
+
+            pivot.Parent = node.Parent;
+            if (node.Parent != null)
+            {
+                if (node.IsLeft)
+                {
+                    node.Parent.Left = pivot;
+                }
+                else
+                {
+                    node.Parent.Right = pivot;
+                }
+            }
+
+            node.Left = pivot.Right;
+            if (pivot.Right != null)
+            {
+                pivot.Right.Parent = node;
+            }
+
+            node.Parent = pivot;
+            pivot.Right = node;
+        }
+
         public void DeleteNode(TData value)
         {
-            var isLeftNode = false;
-            FindParent(value, out isLeftNode);
+            var nodeToDelete = GetNodeInternal(value);
 
-            throw new NotImplementedException();
+            if (nodeToDelete == null)
+            {
+                _logger.Log("Such value dosn't exist");
+                return;
+            }
+
+            if (nodeToDelete.IsLeaf)
+            {
+                nodeToDelete.Parent.ReplaceChild(nodeToDelete, null);
+                return;
+            }
+
+            var child = nodeToDelete.Right == null ? nodeToDelete.Left
+                            : nodeToDelete.Left == null ? nodeToDelete.Right
+                        : null;
+
+            if (child != null)
+            {
+                nodeToDelete.Parent.ReplaceChild(nodeToDelete, child);
+                RebalanceDelete(child);
+                return;
+            }
+
+            var nextNode = nodeToDelete.Right;
+            while (nextNode.Left != null) nextNode = nextNode.Left;
+
+            nextNode.Parent.ReplaceChild(nextNode, nextNode.Right);
+            nextNode.Right = null;
+
+            nodeToDelete.Parent.ReplaceChild(nodeToDelete, nextNode);
+            RebalanceDelete(nextNode);
         }
+
+        #region delete
+        private void Delete1(TreeNode node)
+        {
+            if (node.Parent != null)
+            {
+                Delete2(node);
+            }
+        }
+
+        private void Delete2(TreeNode node)
+        {
+            if (node.Sibling.NodeType == NodeType.Red)
+            {
+                node.Parent.NodeType = NodeType.Red;
+                node.Sibling.NodeType = NodeType.Black;
+
+                if (node.IsLeft)
+                {
+                    RotateLeft(node.Parent);
+                }
+                else
+                {
+                    RotateRight(node.Parent);
+                }
+            }
+            Delete3(node);
+        }
+
+        private void Delete3(TreeNode node)
+        {
+            if (node.Parent.NodeType == NodeType.Black &&
+                node.Sibling.NodeType == NodeType.Black &&
+                node.Sibling.Left.NodeType == NodeType.Black &&
+                node.Sibling.Right.NodeType == NodeType.Black)
+            {
+                node.Sibling.NodeType = NodeType.Red;
+                Delete1(node.Parent);
+            }
+            else
+            {
+                Delete4(node);
+            }
+        }
+
+        private void Delete4(TreeNode node)
+        {
+            if (node.Parent.NodeType == NodeType.Red &&
+                 node.Sibling.NodeType == NodeType.Black &&
+                node.Sibling.Left.NodeType == NodeType.Black &&
+                node.Sibling.Right.NodeType == NodeType.Black)
+            {
+                node.Sibling.NodeType = NodeType.Red;
+                node.Parent.NodeType = NodeType.Black;
+            }
+            else
+            {
+                Delete5(node);
+            }
+        }
+
+        private void Delete5(TreeNode node)
+        {
+            /* this if statement is trivial, 
+                due to case 2 (even though case 2 changed the sibling to a sibling's child, 
+                the sibling's child can't be red, since no red parent can have a red child). */
+
+            /* the following statements just force the red to be on the left of the left of the parent, 
+               or right of the right, so case six will rotate correctly. */
+            if (node.Sibling.NodeType == NodeType.Black)
+            {
+                if (node.IsLeft &&
+                    node.Sibling.Right.NodeType == NodeType.Black &&
+                    node.Sibling.Left.NodeType == NodeType.Red)
+                {
+                    /* this last test is trivial too due to cases 2-4. */
+                    node.Sibling.NodeType = NodeType.Red;
+                    node.Sibling.Left.NodeType = NodeType.Black;
+
+                    RotateRight(node.Sibling);
+                }
+                else if (node.IsRight &&
+                         node.Sibling.Right.NodeType == NodeType.Black &&
+                         node.Sibling.Left.NodeType == NodeType.Red)
+                {
+                    /* this last test is trivial too due to cases 2-4. */
+                    node.Sibling.NodeType = NodeType.Red;
+                    node.Sibling.Right.NodeType = NodeType.Black;
+
+                    RotateLeft(node.Sibling);
+                }
+            }
+
+            Delete6(node);
+        }
+
+        private void Delete6(TreeNode node)
+        {
+            node.Sibling.NodeType = node.Parent.NodeType;
+            node.Parent.NodeType = NodeType.Black;
+
+            if (node.IsLeft)
+            {
+                node.Sibling.Right.NodeType = NodeType.Black;
+
+                RotateLeft(node.Parent);
+            }
+            else
+            {
+                node.Sibling.Left.NodeType = NodeType.Black;
+                RotateRight(node.Parent);
+            }
+
+        }
+
+        #endregion
 
         public INode<TData> GetNode(TData value)
         {
-            /// TODO not work
+            return GetNodeInternal(value);
+        }
+
+        private TreeNode GetNodeInternal(TData value)
+        {
             var isLeftNode = false;
-            var parent = FindParent(value, out isLeftNode);
-            return isLeftNode ? parent.Left : parent.Right;
+            var parent = FindParentForValue(value, out isLeftNode);
+
+            if (parent == null)
+            {
+                return _root;
+            }
+
+            if (isLeftNode && parent.Left.Value.CompareTo(value) == 0)
+            {
+                return parent.Left;
+            }
+
+            if (parent.Right.Value.CompareTo(value) == 0)
+            {
+                return parent.Right;
+            }
+
+            return null;
         }
 
         class TreeNode : INode<TData>
@@ -137,17 +441,70 @@ namespace RedBlackTree
                     {
                         return null;
                     }
-                    if (this.Parent == this.GrandParent.Left)
-                    {
-                        return this.GrandParent.Right;
-                    }
-                    return this.GrandParent.Left;
+                    return this.Parent == this.GrandParent.Left ? this.GrandParent.Right
+                        : this.GrandParent.Left;
                 }
             }
 
-            public void SetNodeType(NodeType nodeType)
+            public TreeNode Sibling
             {
-                throw new NotImplementedException();
+                get
+                {
+                    return this.IsLeft ? this.Parent.Right :
+                        this.IsRight ? this.Parent.Left :
+                        null;
+                }
+            }
+
+            public bool IsLeft
+            {
+                get
+                {
+                    return (this.Parent != null) && (this == this.Parent.Left);
+                }
+            }
+
+            public bool IsRight
+            {
+                get
+                {
+                    return (this.Parent != null) && (this == this.Parent.Right);
+                }
+            }
+
+            public bool IsLeaf
+            {
+                get
+                {
+                    return (this.Left == null) && (this.Right == null);
+                }
+            }
+
+            public void ReplaceChild(TreeNode oldNode, TreeNode newNode)
+            {
+                if (newNode != null)
+                {
+                    if (oldNode.IsLeft)
+                    {
+                        this.Left.Value = newNode.Value;
+                    }
+                    else
+                    {
+                        this.Right.Value = newNode.Value;
+                    }
+                }
+                else
+                {
+                    if (oldNode.IsLeft)
+                    {
+                        this.Left = null;
+                    }
+                    else
+                    {
+                        this.Right = null;
+                    }
+                }
+                oldNode.Parent = null;
             }
         }
     }

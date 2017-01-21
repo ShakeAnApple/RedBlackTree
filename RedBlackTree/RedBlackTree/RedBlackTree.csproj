@@ -43,6 +43,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Utils\ConsoleLogger.cs" />
+    <Compile Include="Utils\ILogger.cs" />
     <Compile Include="Impl\IRBTree.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

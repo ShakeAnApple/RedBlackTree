@@ -1,0 +1,7 @@
+﻿namespace RedBlackTree.Utils
+{
+    public interface ILogger
+    {
+        void Log(string message);
+    }
+}
