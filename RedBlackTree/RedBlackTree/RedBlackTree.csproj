@@ -53,6 +53,12 @@
   <ItemGroup>
     <None Include="App.config" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\DataStructureVisualizer\DataStructureVisualizer.csproj">
+      <Project>{04567353-fe58-475b-8725-63c457d7139e}</Project>
+      <Name>DataStructureVisualizer</Name>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
