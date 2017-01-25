@@ -43,6 +43,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Impl\PersistentRBTree.cs" />
     <Compile Include="Utils\ConsoleLogger.cs" />
     <Compile Include="Utils\ILogger.cs" />
     <Compile Include="Impl\IRBTree.cs" />
