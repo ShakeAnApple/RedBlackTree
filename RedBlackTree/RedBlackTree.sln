@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RedBlackTree", "RedBlackTre
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DataStructureVisualizer", "DataStructureVisualizer\DataStructureVisualizer.csproj", "{04567353-FE58-475B-8725-63C457D7139E}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RedBlackTree.Tests", "RedBlackTree.Tests\RedBlackTree.Tests.csproj", "{6E980EE0-314E-4FD2-9970-CD8288FD07E9}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{04567353-FE58-475B-8725-63C457D7139E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{04567353-FE58-475B-8725-63C457D7139E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{04567353-FE58-475B-8725-63C457D7139E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6E980EE0-314E-4FD2-9970-CD8288FD07E9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6E980EE0-314E-4FD2-9970-CD8288FD07E9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6E980EE0-314E-4FD2-9970-CD8288FD07E9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6E980EE0-314E-4FD2-9970-CD8288FD07E9}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
