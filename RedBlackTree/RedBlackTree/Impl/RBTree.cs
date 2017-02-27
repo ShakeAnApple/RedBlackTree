@@ -39,7 +39,7 @@ namespace RedBlackTree.Impl
         private TreeNode AddNodeInternal(TreeNode newNode)
         {
             var isLeftNode = false;
-            var parent = FindParentForValueOrNode(newNode.Value, out isLeftNode);
+            var parent = FindParent(newNode.Value, out isLeftNode);
             if (isLeftNode)
             {
                 parent.Left = newNode;
@@ -122,7 +122,7 @@ namespace RedBlackTree.Impl
 
             if (nodeToDelete.IsLeaf)
             {
-                nodeToDelete.Parent.ReplaceChildValue(nodeToDelete, null);
+                nodeToDelete.Parent.DeleteChild(nodeToDelete);
                 return;
             }
 
@@ -132,23 +132,24 @@ namespace RedBlackTree.Impl
 
             if (child != null)
             {
-                nodeToDelete.Parent.ReplaceChildValue(nodeToDelete, child);
+                nodeToDelete.Value = child.Value;
+                nodeToDelete.DeleteChild(child);
+
                 this.TakeVisualizerSnapshot();
 
-                RebalanceDelete(child);
+                RebalanceDelete(nodeToDelete);
                 return;
             }
 
             var nextNode = nodeToDelete.Right;
             while (nextNode.Left != null) nextNode = nextNode.Left;
 
-            nextNode.Parent.ReplaceChildValue(nextNode, nextNode.Right);
-            nextNode.Right = null;
+            nodeToDelete.Value = nextNode.Value;
+            nextNode.Parent.DeleteChild(nextNode);
 
-            nodeToDelete.Parent.ReplaceChildValue(nodeToDelete, nextNode);
             this.TakeVisualizerSnapshot();
 
-            RebalanceDelete(nextNode);
+            RebalanceDelete(nodeToDelete);
         }
 
         private void RebalanceDelete(TreeNode node)
@@ -176,16 +177,16 @@ namespace RedBlackTree.Impl
 
             if (node.Sibling != null && node.Parent.NodeType == NodeType.Black &&
             node.Sibling.NodeType == NodeType.Black &&
-            node.Sibling.Left.NodeType == NodeType.Black &&
-            node.Sibling.Right.NodeType == NodeType.Black)
+            (node.Sibling.Left == null || node.Sibling.Left.NodeType == NodeType.Black) &&
+            (node.Sibling.Right == null || node.Sibling.Right.NodeType == NodeType.Black))
             {
                 node.Sibling.NodeType = NodeType.Red;
                 RebalanceDelete(node.Parent);
             }
             else if (node.Sibling != null && node.Parent.NodeType == NodeType.Red &&
                 node.Sibling.NodeType == NodeType.Black &&
-            node.Sibling.Left.NodeType == NodeType.Black &&
-            node.Sibling.Right.NodeType == NodeType.Black)
+            (node.Sibling.Left == null || node.Sibling.Left.NodeType == NodeType.Black) &&
+            (node.Sibling.Right == null || node.Sibling.Right.NodeType == NodeType.Black))
             {
 
                 node.Sibling.NodeType = NodeType.Red;
@@ -196,8 +197,8 @@ namespace RedBlackTree.Impl
                 if (node.Sibling != null && node.Sibling.NodeType == NodeType.Black)
                 {
                     if (node.IsLeft &&
-                        node.Sibling.Right.NodeType == NodeType.Black &&
-                        node.Sibling.Left.NodeType == NodeType.Red)
+                        (node.Sibling.Right == null || node.Sibling.Right.NodeType == NodeType.Black) &&
+                        (node.Sibling.Left != null && node.Sibling.Left.NodeType == NodeType.Red))
                     {
                         node.Sibling.NodeType = NodeType.Red;
                         node.Sibling.Left.NodeType = NodeType.Black;
@@ -205,13 +206,15 @@ namespace RedBlackTree.Impl
                         RotateRight(node.Sibling);
                     }
                     else if (node.IsRight &&
-                                node.Sibling.Right.NodeType == NodeType.Black &&
-                                node.Sibling.Left.NodeType == NodeType.Red)
+                                (node.Sibling.Right == null || node.Sibling.Right.NodeType == NodeType.Black) &&
+                                (node.Sibling.Left != null && node.Sibling.Left.NodeType == NodeType.Red))
                     {
                         node.Sibling.NodeType = NodeType.Red;
-                        node.Sibling.Right.NodeType = NodeType.Black;
-
-                        RotateLeft(node.Sibling);
+                        if (node.Sibling.Right != null)
+                        {
+                            node.Sibling.Right.NodeType = NodeType.Black;
+                            RotateLeft(node.Sibling);
+                        }
                     }
                 }
                 this.TakeVisualizerSnapshot();
@@ -225,7 +228,7 @@ namespace RedBlackTree.Impl
 
                 if (node.IsLeft)
                 {
-                    if (node.Sibling != null)
+                    if (node.Sibling != null && node.Sibling.Right != null)
                     {
                         node.Sibling.Right.NodeType = NodeType.Black;
                     }
@@ -234,7 +237,7 @@ namespace RedBlackTree.Impl
                 }
                 else
                 {
-                    if (node.Sibling != null)
+                    if (node.Sibling != null && node.Sibling.Left != null)
                     {
                         node.Sibling.Left.NodeType = NodeType.Black;
                     }
@@ -251,28 +254,25 @@ namespace RedBlackTree.Impl
 
         private TreeNode GetNodeInternal(TData value)
         {
-            var isLeftNode = false;
-            return FindParentForValueOrNode(value, out isLeftNode);
-
-            //if (parent == null)
-            //{
-            //    return _root;
-            //}
-
-            //if (isLeftNode && parent.Left.Value.CompareTo(value) == 0)
-            //{
-            //    return parent.Left;
-            //}
-
-            //if (parent.Right.Value.CompareTo(value) == 0)
-            //{
-            //    return parent.Right;
-            //}
-
-            //return null;
+            var prevNode = _root;
+            while (true)
+            {
+                if (value.CompareTo(prevNode.Value) < 0)
+                {
+                    prevNode = prevNode.Left;
+                }
+                else if (value.CompareTo(prevNode.Value) > 0)
+                {
+                    prevNode = prevNode.Right;
+                }
+                else
+                {
+                    return prevNode;
+                }
+            }
         }
 
-        private TreeNode FindParentForValueOrNode(TData nodeValue, out bool isLeftNode)
+        private TreeNode FindParent(TData nodeValue, out bool isLeftNode)
         {
             TreeNode parent = null;
             isLeftNode = false;
@@ -300,7 +300,7 @@ namespace RedBlackTree.Impl
                 }
                 else
                 {
-                    return prevNode;
+                    _logger.Log("such node already exists");
                 }
             }
             return parent;
@@ -443,29 +443,15 @@ namespace RedBlackTree.Impl
                 }
             }
 
-            public void ReplaceChildValue(TreeNode oldNode, TreeNode newNode)
+            public void DeleteChild(TreeNode nodeToDelete)
             {
-                if (newNode != null)
+                if (nodeToDelete.IsLeft)
                 {
-                    if (oldNode.IsLeft)
-                    {
-                        this.Left.Value = newNode.Value;
-                    }
-                    else
-                    {
-                        this.Right.Value = newNode.Value;
-                    }
+                    this.Left = null;
                 }
                 else
                 {
-                    if (oldNode.IsLeft)
-                    {
-                        this.Left = null;
-                    }
-                    else
-                    {
-                        this.Right = null;
-                    }
+                    this.Right = null;
                 }
             }
 
